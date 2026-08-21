@@ -47,9 +47,9 @@ class MultiLayerGuardrailManager:
             return False, "No relevant context found in the dataset to answer this question."
         
         best_score = search_results[0].score
-        # Strict threshold (0.35) to ensure questions outside dataset are properly refused
-        if best_score < 0.35:
-            return False, f"Question is not covered in the dataset knowledge base (relevance score {best_score:.2f} < threshold 0.35)."
+        threshold = getattr(settings, "SIMILARITY_THRESHOLD", 0.18)
+        if best_score < threshold:
+            return False, f"Question is not covered in the dataset knowledge base (relevance score {best_score:.2f} < threshold {threshold:.2f})."
         
         return True, None
 

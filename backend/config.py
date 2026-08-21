@@ -23,7 +23,7 @@ class Settings:
     EMBEDDING_MODEL_NAME: str = "all-MiniLM-L6-v2"
     VECTOR_DIM: int = 384
     TOP_K_RETRIEVAL: int = 3
-    SIMILARITY_THRESHOLD: float = 0.30
+    SIMILARITY_THRESHOLD: float = 0.18
     
     # Latency Target & Benchmarking
     LATENCY_TARGET_MS: float = 200.0
