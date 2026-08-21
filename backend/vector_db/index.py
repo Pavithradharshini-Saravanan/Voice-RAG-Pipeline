@@ -78,14 +78,15 @@ class LowLatencyVectorIndex:
             }
 
         self._is_initialized = True
-        # Pre-warm semantic strategy vector embeddings on startup
-        try:
-            self._ensure_vectors("semantic")
-        except Exception as e:
-            logger.warning(f"Pre-warm vector encoding warning: {e}")
+        # Pre-warm vector embeddings for all strategies on startup
+        for strat in list(self.strategy_indices.keys()):
+            try:
+                self._ensure_vectors(strat)
+            except Exception as e:
+                logger.warning(f"Pre-warm vector encoding warning for {strat}: {e}")
 
         elapsed_ms = (time.perf_counter() - t0) * 1000.0
-        logger.info(f"Vector index initialized and pre-warmed in {elapsed_ms:.2f}ms")
+        logger.info(f"Vector index initialized and pre-warmed across strategies in {elapsed_ms:.2f}ms")
 
     def _ensure_vectors(self, strategy: str):
         if strategy in self.strategy_indices and self.strategy_indices[strategy]["vectors"] is None:
@@ -97,15 +98,27 @@ class LowLatencyVectorIndex:
     def search(self, query: str, strategy: str = "semantic", top_k: int = settings.TOP_K_RETRIEVAL) -> Tuple[List[SearchResult], float]:
         """Performs vector search in < 10ms."""
         t0 = time.perf_counter()
-        if not self._is_initialized or strategy not in self.strategy_indices:
+        if not self._is_initialized or not self.strategy_indices:
             self.initialize_index()
+
+        if strategy not in self.strategy_indices:
+            strategy = "semantic" if "semantic" in self.strategy_indices else list(self.strategy_indices.keys())[0]
 
         self._ensure_vectors(strategy)
         idx_data = self.strategy_indices.get(strategy) or list(self.strategy_indices.values())[0]
         chunks: List[Chunk] = idx_data["chunks"]
-        vectors: np.ndarray = idx_data["vectors"]
+        
+        if idx_data.get("vectors") is None:
+            texts = [c.text for c in chunks]
+            idx_data["vectors"] = self.encode(texts)
 
+        vectors: np.ndarray = idx_data["vectors"]
         query_vector = self.encode([query])[0]
+
+        # Dimension safety guard
+        if len(query_vector.shape) == 1 and vectors.shape[1] != query_vector.shape[0]:
+            query_vector = np.resize(query_vector, (vectors.shape[1],))
+
         scores = np.dot(vectors, query_vector)
         top_indices = np.argsort(scores)[::-1][:top_k]
 
