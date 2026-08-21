@@ -27,12 +27,17 @@ class LowLatencyVectorIndex:
 
     def _init_encoder(self):
         if self.encoder is None:
-            try:
-                from sentence_transformers import SentenceTransformer
-                logger.info(f"Loading embedding model: {self.model_name}")
-                self.encoder = SentenceTransformer(self.model_name)
-            except Exception as e:
-                logger.warning(f"Using TF-IDF vectorizer fallback ({e}).")
+            use_tfidf = os.getenv("USE_TFIDF_EMBEDDINGS", "false").lower() == "true"
+            if not use_tfidf:
+                try:
+                    from sentence_transformers import SentenceTransformer
+                    logger.info(f"Loading embedding model: {self.model_name}")
+                    self.encoder = SentenceTransformer(self.model_name)
+                except Exception as e:
+                    logger.warning(f"SentenceTransformer unavailable/failed ({e}). Using TF-IDF vectorizer fallback.")
+                    use_tfidf = True
+
+            if use_tfidf or self.encoder is None:
                 from sklearn.feature_extraction.text import TfidfVectorizer
                 self.encoder = TfidfVectorizer(max_features=settings.VECTOR_DIM)
 
@@ -68,13 +73,19 @@ class LowLatencyVectorIndex:
 
             self.strategy_indices[strat] = {
                 "chunks": chunks,
-                "vectors": None,  # Lazy encoded on demand for instant boot
+                "vectors": None,
                 "count": len(chunks)
             }
 
         self._is_initialized = True
+        # Pre-warm semantic strategy vector embeddings on startup
+        try:
+            self._ensure_vectors("semantic")
+        except Exception as e:
+            logger.warning(f"Pre-warm vector encoding warning: {e}")
+
         elapsed_ms = (time.perf_counter() - t0) * 1000.0
-        logger.info(f"Vector index prepared in {elapsed_ms:.2f}ms")
+        logger.info(f"Vector index initialized and pre-warmed in {elapsed_ms:.2f}ms")
 
     def _ensure_vectors(self, strategy: str):
         if strategy in self.strategy_indices and self.strategy_indices[strategy]["vectors"] is None:
