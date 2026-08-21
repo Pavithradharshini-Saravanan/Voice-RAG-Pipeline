@@ -74,10 +74,11 @@ class STTService:
 
         if simulated_text and simulated_text.strip():
             transcript = simulated_text.strip()
-        else:
-            # Pick query based on audio length/hash
+        elif audio_bytes:
             idx = len(audio_bytes) % len(default_queries)
             transcript = default_queries[idx]
+        else:
+            transcript = default_queries[0]
 
         # Simulate fast audio processing (~ 10-25ms)
         latency_ms = (time.perf_counter() - t0) * 1000.0 + 15.0

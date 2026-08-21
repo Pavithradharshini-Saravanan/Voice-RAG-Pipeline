@@ -460,7 +460,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const res = await fetch("/api/voice-rag", { method:"POST", body:fd });
-            if (!res.ok) throw new Error("HTTP " + res.status);
+            if (!res.ok) {
+                let errText = "HTTP " + res.status;
+                try {
+                    const jsonErr = await res.json();
+                    if (jsonErr && jsonErr.detail) errText = jsonErr.detail;
+                } catch(_) {}
+                throw new Error(errText);
+            }
             renderResults(await res.json());
         } catch(err) {
             convBox.classList.remove("hidden");
