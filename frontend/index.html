@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Assistant | Voice-Enabled RAG Pipeline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/css/styles.css?v=19">
+</head>
+<body class="dark-theme">
+
+    <!-- Sidebar Drawer -->
+    <aside class="sidebar-drawer hidden" id="id-sidebar-drawer">
+        <div class="drawer-header">
+            <h3>⚙️ Engine Configuration</h3>
+            <button class="drawer-close-btn" id="id-close-drawer-btn" type="button">&times;</button>
+        </div>
+        <div class="drawer-body">
+            <div class="form-group">
+                <label for="id-stt-provider-select">Speech-To-Text Provider</label>
+                <select id="id-stt-provider-select" class="custom-select">
+                    <option value="sarvam" selected>Sarvam AI STT</option>
+                    <option value="elevenlabs">ElevenLabs Speech-to-Text</option>
+                    <option value="mock">High-Speed Local Fast Transcriber</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="id-chunking-strategy-select">Chunking Strategy</label>
+                <select id="id-chunking-strategy-select" class="custom-select">
+                    <option value="semantic" selected> Semantic / Sentence Boundary</option>
+                    <option value="fixed_size">Fixed-Size with Sliding Window</option>
+                    <option value="metadata_aware"> Metadata-Aware Structuring</option>
+                    <option value="hierarchical">Hierarchical Parent-Child</option>
+                    <option value="recursive"> Recursive Multi-Delimiter</option>
+                </select>
+            </div>
+        </div>
+        <div class="drawer-footer">
+            <button class="btn btn-primary btn-block" id="id-save-drawer-btn" type="button">Apply</button>
+        </div>
+    </aside>
+    <div class="drawer-backdrop hidden" id="id-drawer-backdrop"></div>
+
+    <!-- Header -->
+    <header class="app-header">
+        <button class="icon-menu-btn" id="id-menu-toggle-btn" type="button" title="Engine Settings">☰</button>
+        <span class="app-title">Voice RAG</span>
+        <div style="width:40px"></div><!-- spacer to keep title centred -->
+    </header>
+
+    <!-- Main Stage: canvas waves behind CSS glass orb -->
+    <section class="assistant-stage" id="id-assistant-stage">
+        <canvas id="id-orb-canvas"></canvas>
+
+        <!-- CSS Glass Sphere (sits above canvas, waves show through) -->
+        <div class="crystal-orb-wrapper" id="id-glowing-orb">
+            <div class="orb-glass"></div>
+            <div class="orb-floor"></div>
+        </div>
+
+        <!-- Q&A result — transparent cards, no background flash -->
+        <div class="conversation-container hidden" id="id-conversation-container">
+            <div class="question-bubble-card">
+                <div class="bubble-header"><span>You asked:</span></div>
+                <div class="question-text" id="id-transcription-text"></div>
+            </div>
+            <div class="answer-bubble-card">
+                <div class="bubble-header"><span>Voice RAG Answer:</span></div>
+                <div class="answer-text" id="id-answer-text"></div>
+            </div>
+        </div>
+
+        <!-- Text input drawer -->
+        <div class="text-input-drawer hidden" id="id-text-input-drawer">
+            <div class="input-with-btn">
+                <input type="text" id="id-text-input" placeholder="Type your question..." value="Tell me about Goa history and its tropical beaches.">
+                <button id="id-submit-text-btn" class="btn btn-primary" type="button">Run RAG</button>
+            </div>
+        </div>
+
+        <!-- Floating bottom action bar -->
+        <div class="floating-bottom-bar" id="id-bottom-bar">
+            <button class="bar-icon-btn" id="id-toggle-text-drawer-btn" type="button" title="Type Question">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            </button>
+            <button id="id-record-btn" class="main-mic-btn" type="button" title="Toggle Voice Recording">
+                <svg id="id-mic-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <mask id="micCutoutMaskMain">
+                        <rect width="24" height="24" fill="white"/>
+                        <line x1="9.2" y1="5.5" x2="14.8" y2="5.5" stroke="black" stroke-width="1.3" stroke-linecap="round"/>
+                        <line x1="9.2" y1="8.0" x2="14.8" y2="8.0" stroke="black" stroke-width="1.3" stroke-linecap="round"/>
+                        <line x1="9.2" y1="10.5" x2="14.8" y2="10.5" stroke="black" stroke-width="1.3" stroke-linecap="round"/>
+                    </mask>
+                    <path d="M12 2C9.79 2 8 3.79 8 6V11C8 13.21 9.79 15 12 15C14.21 15 16 13.21 16 11V6C16 3.79 14.21 2 12 2Z" fill="white" mask="url(#micCutoutMaskMain)"/>
+                    <path d="M5 11C5 14.866 8.134 18 12 18C15.866 18 19 14.866 19 11" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+                    <line x1="12" y1="18" x2="12" y2="21" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+                    <path d="M8 21.5H16" stroke="white" stroke-width="2.4" stroke-linecap="round"/>
+                </svg>
+            </button>
+            <button class="bar-icon-btn" id="id-open-drawer-btn" type="button" title="AI Settings">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </button>
+        </div>
+
+        <!-- Status label: fixed just above the mic bar -->
+        <div class="status-label" id="id-recording-status">Tap the microphone to speak</div>
+    </section>
+
+    <!-- Analytics Panel -->
+    <div class="analytics-panel" id="id-analytics-panel">
+        <!-- Hidden fallback inputs for API compat -->
+        <input type="text"  id="id-hidden-text-input"    style="display:none" value="Tell me about Goa.">
+        <input type="password" id="id-sarvam-key-input"   style="display:none">
+        <input type="password" id="id-elevenlabs-key-input" style="display:none">
+
+        <!-- Execution Stepper -->
+        <section class="analytics-card">
+            <div class="acard-header">
+                <div class="acard-title"><span class="acard-icon"></span> Execution Stepper</div>
+                <div class="latency-badge">Latency:&nbsp;<span id="id-total-ms-val">0.0</span>&nbsp;ms</div>
+            </div>
+            <div class="steps-row">
+                <div class="step-node" id="id-step-stt">
+                    <div class="step-circle">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <mask id="micCutoutMaskStt">
+                                <rect width="24" height="24" fill="white"/>
+                                <line x1="9.2" y1="5.5" x2="14.8" y2="5.5" stroke="black" stroke-width="1.3" stroke-linecap="round"/>
+                                <line x1="9.2" y1="8.0" x2="14.8" y2="8.0" stroke="black" stroke-width="1.3" stroke-linecap="round"/>
+                                <line x1="9.2" y1="10.5" x2="14.8" y2="10.5" stroke="black" stroke-width="1.3" stroke-linecap="round"/>
+                            </mask>
+                            <path d="M12 2C9.79 2 8 3.79 8 6V11C8 13.21 9.79 15 12 15C14.21 15 16 13.21 16 11V6C16 3.79 14.21 2 12 2Z" fill="white" mask="url(#micCutoutMaskStt)"/>
+                            <path d="M5 11C5 14.866 8.134 18 12 18C15.866 18 19 14.866 19 11" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+                            <line x1="12" y1="18" x2="12" y2="21" stroke="white" stroke-width="2.2" stroke-linecap="round"/>
+                            <path d="M8 21.5H16" stroke="white" stroke-width="2.4" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="step-info"><span class="step-name">STT</span><span class="step-time" id="id-time-stt">&mdash;</span></div>
+                </div>
+                <span class="step-sep">›</span>
+                <div class="step-node" id="id-step-guard-in">
+                    <div class="step-circle">🛡️</div>
+                    <div class="step-info"><span class="step-name">Safety</span><span class="step-time" id="id-time-guard-in">&mdash;</span></div>
+                </div>
+                <span class="step-sep">›</span>
+                <div class="step-node" id="id-step-vector">
+                    <div class="step-circle">🔍</div>
+                    <div class="step-info"><span class="step-name">Vector</span><span class="step-time" id="id-time-vector">&mdash;</span></div>
+                </div>
+                <span class="step-sep">›</span>
+                <div class="step-node" id="id-step-gen">
+                    <div class="step-circle">〰️</div>
+                    <div class="step-info"><span class="step-name">Synth</span><span class="step-time" id="id-time-gen">&mdash;</span></div>
+                </div>
+                <span class="step-sep">›</span>
+                <div class="step-node" id="id-step-guard-out">
+                    <div class="step-circle">🎯</div>
+                    <div class="step-info"><span class="step-name">Ground</span><span class="step-time" id="id-time-guard-out">&mdash;</span></div>
+                </div>
+            </div>
+            <div class="step-track">
+                <div class="step-track-fill" id="id-step-fill" style="width:0%"></div>
+                <div class="step-track-dots">
+                    <span class="track-dot" id="td-0"></span>
+                    <span class="track-dot" id="td-1"></span>
+                    <span class="track-dot" id="td-2"></span>
+                    <span class="track-dot" id="td-3"></span>
+                    <span class="track-dot" id="td-4"></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Latency Analytics -->
+        <section class="analytics-card">
+            <div class="acard-header">
+                <div class="acard-title"><span class="acard-icon"></span> Latency Analytics</div>
+                <button class="btn btn-accent btn-sm" id="id-run-benchmark-btn"> Run Benchmark</button>
+            </div>
+            <div class="latency-layout">
+                <!-- 2×2 percentile mini-cards with sparklines -->
+                <div class="pcard-grid">
+                    <div class="p-minicard p-cyan">
+                        <div class="pc-label">P50</div>
+                        <div class="pc-value" id="id-p50-val">18.15 <small>ms</small></div>
+                        <svg class="sparkline" viewBox="0 0 80 30" preserveAspectRatio="none">
+                            <polyline id="sp-p50" fill="none" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points=""/>
+                        </svg>
+                    </div>
+                    <div class="p-minicard p-green">
+                        <div class="pc-label">P70</div>
+                        <div class="pc-value" id="id-p70-val">19.33 <small>ms</small></div>
+                        <svg class="sparkline" viewBox="0 0 80 30" preserveAspectRatio="none">
+                            <polyline id="sp-p70" fill="none" stroke="#4ade80" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points=""/>
+                        </svg>
+                    </div>
+                    <div class="p-minicard p-orange">
+                        <div class="pc-label">P90</div>
+                        <div class="pc-value" id="id-p90-val">24.23 <small>ms</small></div>
+                        <svg class="sparkline" viewBox="0 0 80 30" preserveAspectRatio="none">
+                            <polyline id="sp-p90" fill="none" stroke="#fb923c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points=""/>
+                        </svg>
+                    </div>
+                    <div class="p-minicard p-red">
+                        <div class="pc-label">P100</div>
+                        <div class="pc-value" id="id-p100-val">38.45 <small>ms</small></div>
+                        <svg class="sparkline" viewBox="0 0 80 30" preserveAspectRatio="none">
+                            <polyline id="sp-p100" fill="none" stroke="#f87171" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points=""/>
+                        </svg>
+                    </div>
+                </div>
+                <!-- Polar orbit radar chart -->
+                <div class="radar-wrap">
+                    <canvas id="id-radar-canvas" width="300" height="300"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <footer class="app-footer">© 2026 Voice-Enabled RAG Pipeline. All Rights Reserved.</footer>
+    </div>
+
+    <script src="/static/js/app.js?v=19"></script>
+</body>
+</html>
