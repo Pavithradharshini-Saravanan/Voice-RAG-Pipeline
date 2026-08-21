@@ -1,4 +1,5 @@
 import time
+import math
 import numpy as np
 import logging
 from dataclasses import dataclass
@@ -127,6 +128,8 @@ class LowLatencyVectorIndex:
 
         for idx in top_indices:
             score = float(scores[idx])
+            if math.isnan(score) or math.isinf(score):
+                score = 0.0
             chunk = chunks[idx]
 
             if chunk.strategy == "hierarchical_child" and chunk.parent_chunk_id:

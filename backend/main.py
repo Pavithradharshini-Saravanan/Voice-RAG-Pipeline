@@ -32,6 +32,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    logger.error(f"Unhandled error on {request.url}: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc) or "Internal server processing error"}
+    )
+
 # Startup event: pre-initialize vector index
 @app.on_event("startup")
 async def startup_event():

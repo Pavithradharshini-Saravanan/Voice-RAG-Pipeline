@@ -1,5 +1,6 @@
 import re
 import time
+import math
 import asyncio
 import logging
 from dataclasses import dataclass, field
@@ -12,6 +13,15 @@ from backend.guardrails.guardrail_manager import guardrail_manager, GuardrailRes
 from backend.config import settings
 
 logger = logging.getLogger(__name__)
+
+def safe_float(val: Any, default: float = 0.0) -> float:
+    try:
+        f = float(val)
+        if math.isnan(f) or math.isinf(f):
+            return default
+        return f
+    except Exception:
+        return default
 
 # Structured Pydantic Input/Output Schemas
 class HarnessRequest(BaseModel):
@@ -213,7 +223,7 @@ class AgentHarness:
             {
                 "chunk_id": r.chunk.chunk_id,
                 "doc_id": r.chunk.doc_id,
-                "score": round(r.score, 4),
+                "score": round(safe_float(r.score), 4),
                 "text": r.chunk.text,
                 "strategy": r.chunk.strategy,
                 "metadata": r.chunk.metadata
@@ -255,12 +265,13 @@ class AgentHarness:
         if refused:
             final_answer = f"I am unable to answer this question. {g_res.refusal_reason or 'Context relevance low.'}"
 
+        g_score_safe = round(safe_float(g_res.grounding_score), 2)
         tool_logs.append(ToolCallLog(
             tool_name="grounding_guardrail_tool",
             status="passed" if g_res.passed_all else "refused",
             latency_ms=timing.guardrail_output_ms,
             details={
-                "grounding_score": round(g_res.grounding_score, 2),
+                "grounding_score": g_score_safe,
                 "is_grounded": g_res.is_grounded,
                 "is_on_topic": g_res.is_on_topic
             }
@@ -279,7 +290,7 @@ class AgentHarness:
             refusal_reason=g_res.refusal_reason,
             retrieved_chunks=formatted_chunks,
             chunking_strategy=request.chunking_strategy,
-            grounding_score=round(g_res.grounding_score, 2),
+            grounding_score=g_score_safe,
             timing=timing,
             tool_calls=tool_logs
         )

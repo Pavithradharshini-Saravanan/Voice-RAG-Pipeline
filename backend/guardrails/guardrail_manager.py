@@ -1,5 +1,6 @@
 import re
 import time
+import math
 import logging
 from dataclasses import dataclass
 from typing import List, Tuple, Dict, Any, Optional
@@ -114,6 +115,9 @@ class MultiLayerGuardrailManager:
         ms = (time.perf_counter() - t0) * 1000.0
         passed_all = is_safe and is_topic and is_grounded
         refusal = g_reason if not is_grounded else None
+
+        if math.isnan(g_score) or math.isinf(g_score):
+            g_score = 0.0
 
         return GuardrailResult(
             is_safe=is_safe,
