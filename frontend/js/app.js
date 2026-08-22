@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const sarvamKey    = document.getElementById("id-sarvam-key-input");
     const elevenKey    = document.getElementById("id-elevenlabs-key-input");
     const totalMsEl    = document.getElementById("id-total-ms-val");
-    const chunksListEl = null; // section removed
+    const chunksListEl = document.getElementById("id-chunks-list");
     const benchmarkBtn = document.getElementById("id-run-benchmark-btn");
     const p50El        = document.getElementById("id-p50-val");
     const p70El        = document.getElementById("id-p70-val");
@@ -329,6 +329,21 @@ document.addEventListener("DOMContentLoaded", () => {
             }, idx * 200);
         });
 
+        // Render Chunks
+        if (chunksListEl) {
+            chunksListEl.innerHTML = "";
+            const chunks = data.retrieved_chunks || [];
+            const badge  = document.getElementById("id-chunks-count-badge");
+            if (badge) badge.textContent = `${chunks.length} chunk${chunks.length !== 1 ? "s" : ""}`;
+
+            chunks.forEach(item => {
+                const d = document.createElement("div"); d.className = "chunk-card";
+                d.innerHTML = `<div class="chunk-meta"><span class="chunk-score">Sim: ${item.score}</span><span class="chunk-strategy">${item.strategy}</span></div><p class="chunk-text">${item.text}</p>`;
+                chunksListEl.appendChild(d);
+            });
+            if (!chunks.length)
+                chunksListEl.innerHTML = "<p class='chunks-placeholder'>No chunks retrieved.</p>";
+        }
     }
 
     /* ══════════════════════════════════════

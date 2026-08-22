@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/static/css/styles.css?v=20">
+    <link rel="stylesheet" href="/static/css/styles.css?v=21">
 </head>
 <body class="dark-theme">
 
@@ -173,6 +173,17 @@
             </div>
         </section>
 
+        <!-- Retrieved Context Chunks -->
+        <section class="analytics-card">
+            <div class="acard-header">
+                <div class="acard-title"><span class="acard-icon">📚</span> Retrieved Context Chunks</div>
+                <div class="chunks-count-badge" id="id-chunks-count-badge">&mdash;</div>
+            </div>
+            <div id="id-chunks-list" class="chunks-list-body">
+                <p class="chunks-placeholder">Run a query to see retrieved chunks…</p>
+            </div>
+        </section>
+
         <!-- Latency Analytics -->
         <section class="analytics-card">
             <div class="acard-header">
@@ -221,6 +232,6 @@
         <footer class="app-footer">© 2026 Voice-Enabled RAG Pipeline. All Rights Reserved.</footer>
     </div>
 
-    <script src="/static/js/app.js?v=20"></script>
+    <script src="/static/js/app.js?v=21"></script>
 </body>
 </html>
